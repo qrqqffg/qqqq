@@ -1,0 +1,1877 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>旅行推荐 - 发现周边好吃好玩的地方</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- GSAP 动画库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+        
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3a0ca3;
+            --accent-color: #f72585;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+        }
+        
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            scroll-behavior: smooth;
+        }
+        
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        
+        .search-container {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(15px);
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 40px rgba(31, 38, 135, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .search-container:hover {
+            box-shadow: 0 15px 45px rgba(31, 38, 135, 0.3);
+        }
+        
+        .card {
+            transition: all 0.3s ease;
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        .card-img-top {
+            height: 200px;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+        
+        .card:hover .card-img-top {
+            transform: scale(1.05);
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+        
+        .btn-primary:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: all 0.6s ease;
+            z-index: -1;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+        
+        .btn-primary:hover:before {
+            left: 100%;
+        }
+        
+        .btn-outline-primary {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-outline-primary:hover {
+            background-color: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .badge {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .badge:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: all 0.6s ease;
+        }
+        
+        .badge:hover {
+            transform: scale(1.05);
+        }
+        
+        .badge:hover:before {
+            left: 100%;
+        }
+        
+        .animate-fade-in {
+            opacity: 0;
+            animation: fadeIn 0.5s forwards;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .animate-pulse-slow {
+            animation: pulse 3s infinite;
+        }
+        
+        .animate-delay-100 { animation-delay: 0.1s; }
+        .animate-delay-200 { animation-delay: 0.2s; }
+        .animate-delay-300 { animation-delay: 0.3s; }
+        .animate-delay-400 { animation-delay: 0.4s; }
+        .animate-delay-500 { animation-delay: 0.5s; }
+        
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+        }
+        
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .preference-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .preference-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: var(--secondary-color);
+        }
+        
+        .custom-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='6' viewBox='0 0 12 6'%3E%3Cpath fill='%23333' d='M0 0l6 6 6-6z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 12px 6px;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .search-container {
+                padding: 1rem;
+                border-radius: 1rem;
+            }
+            
+            .card-img-top {
+                height: 150px;
+            }
+            
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* 深色模式 */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #1a202c;
+                color: #e2e8f0;
+            }
+            
+            .search-container {
+                background: rgba(26, 32, 44, 0.85);
+                border-color: rgba(75, 85, 99, 0.3);
+            }
+            
+            .card {
+                background-color: rgba(45, 55, 72, 0.9);
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            }
+            
+            .skeleton {
+                background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+            }
+            
+            .custom-select {
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='6' viewBox='0 0 12 6'%3E%3Cpath fill='%23e2e8f0' d='M0 0l6 6 6-6z'/%3E%3C/svg%3E");
+            }
+            
+            .btn-primary:hover {
+                box-shadow: 0 0 15px rgba(67, 97, 238, 0.5);
+            }
+            
+            .badge:hover {
+                box-shadow: 0 0 10px rgba(67, 97, 238, 0.4);
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- 背景Canvas -->
+    <canvas id="bg-canvas"></canvas>
+    
+    <!-- 导航栏 -->
+    <nav class="bg-white bg-opacity-80 backdrop-blur-md shadow-sm fixed w-full z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-map-marked-alt text-2xl text-blue-600"></i>
+                <span class="text-xl font-bold text-gray-800">旅行推荐</span>
+            </div>
+            
+            <div class="hidden md:flex items-center space-x-6">
+                <a href="#" class="text-gray-700 hover:text-blue-600 transition-colors">首页</a>
+                <a href="#recommendations" class="text-gray-700 hover:text-blue-600 transition-colors">推荐</a>
+                <a href="#itinerary" class="text-gray-700 hover:text-blue-600 transition-colors">行程规划</a>
+                <a href="#about" class="text-gray-700 hover:text-blue-600 transition-colors">关于我们</a>
+            </div>
+            
+            <div class="md:hidden">
+                <button id="mobile-menu-button" class="text-gray-700 hover:text-blue-600">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 移动端菜单 -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white bg-opacity-95 backdrop-blur-md shadow-md">
+            <div class="container mx-auto px-4 py-2 flex flex-col space-y-3">
+                <a href="#" class="text-gray-700 hover:text-blue-600 py-2 transition-colors">首页</a>
+                <a href="#recommendations" class="text-gray-700 hover:text-blue-600 py-2 transition-colors">推荐</a>
+                <a href="#itinerary" class="text-gray-700 hover:text-blue-600 py-2 transition-colors">行程规划</a>
+                <a href="#about" class="text-gray-700 hover:text-blue-600 py-2 transition-colors">关于我们</a>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- 主要内容 -->
+    <main class="container mx-auto px-4 pt-24 pb-16">
+        <!-- 英雄区域 -->
+        <section class="text-center mb-16">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4 text-gray-800">发现周边好吃好玩的地方</h1>
+            <p class="text-xl text-gray-600 max-w-3xl mx-auto mb-8">输入地点，获取个性化的旅游推荐和游玩建议，让您的旅行更加精彩！</p>
+            
+            <!-- 搜索框 -->
+            <div class="search-container max-w-3xl mx-auto p-6">
+                <div class="flex flex-col md:flex-row gap-4">
+                    <div class="flex-grow">
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                            <input type="text" id="location-input" placeholder="输入城市或景点名称" 
+                                class="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <!-- 搜索建议下拉框 -->
+                            <div id="search-suggestions" class="absolute w-full mt-1 bg-white rounded-lg shadow-lg z-10 hidden">
+                                <ul class="py-2 max-h-60 overflow-y-auto">
+                                    <!-- 搜索建议将通过JavaScript动态生成 -->
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="search-button" class="btn-primary px-6 py-3 rounded-lg font-medium text-white">
+                        <i class="fas fa-magic mr-2"></i>智能推荐
+                    </button>
+                </div>
+                
+                <!-- 热门搜索 -->
+                <div class="mt-6">
+                    <p class="text-sm text-gray-500 mb-3">热门搜索：</p>
+                    <div class="flex flex-wrap gap-2">
+                        <button class="popular-search badge px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm hover:bg-blue-200">北京</button>
+                        <button class="popular-search badge px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm hover:bg-blue-200">上海</button>
+                        <button class="popular-search badge px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm hover:bg-blue-200">成都</button>
+                        <button class="popular-search badge px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm hover:bg-blue-200">西安</button>
+                        <button class="popular-search badge px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm hover:bg-blue-200">广州</button>
+                        <button class="popular-search badge px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm hover:bg-blue-200">杭州</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 偏好设置 -->
+        <section id="preferences" class="mb-12 hidden">
+            <div class="bg-white bg-opacity-80 backdrop-blur-md rounded-xl shadow-sm p-6">
+                <h2 class="text-2xl font-bold mb-6 text-gray-800">个性化推荐设置</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- 旅行类型 -->
+                    <div>
+                        <h3 class="text-lg font-medium mb-4 text-gray-700">旅行类型</h3>
+                        <div class="flex flex-wrap gap-3">
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded" checked>
+                                <span class="text-gray-700">美食之旅</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded" checked>
+                                <span class="text-gray-700">文化体验</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded">
+                                <span class="text-gray-700">自然风光</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded">
+                                <span class="text-gray-700">历史古迹</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded">
+                                <span class="text-gray-700">主题乐园</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- 旅行时长 -->
+                    <div>
+                        <h3 class="text-lg font-medium mb-4 text-gray-700">旅行时长</h3>
+                        <div class="flex items-center space-x-4">
+                            <span class="text-gray-600">1天</span>
+                            <input type="range" min="1" max="7" value="3" class="preference-slider flex-grow h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            <span class="text-gray-600">7天</span>
+                        </div>
+                        <div class="text-center mt-2">
+                            <span id="duration-value" class="text-blue-600 font-medium">3天</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 预算范围 -->
+                    <div>
+                        <h3 class="text-lg font-medium mb-4 text-gray-700">预算范围</h3>
+                        <select class="custom-select w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="budget">经济型</option>
+                            <option value="mid" selected>中档</option>
+                            <option value="luxury">豪华型</option>
+                        </select>
+                    </div>
+                    
+                    <!-- 特殊兴趣 -->
+                    <div>
+                        <h3 class="text-lg font-medium mb-4 text-gray-700">特殊兴趣</h3>
+                        <div class="flex flex-wrap gap-3">
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded">
+                                <span class="text-gray-700">摄影</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded">
+                                <span class="text-gray-700">购物</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded">
+                                <span class="text-gray-700">夜生活</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded">
+                                <span class="text-gray-700">亲子</span>
+                            </label>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded">
+                                <span class="text-gray-700">艺术</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-8 text-center">
+                    <button id="apply-preferences" class="btn-primary px-8 py-3 rounded-lg font-medium text-white">
+                        <i class="fas fa-sliders-h mr-2"></i>应用设置
+                    </button>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 推荐结果 -->
+        <section id="recommendations" class="mb-16 hidden">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-3xl font-bold text-gray-800">
+                    <span id="location-name">北京</span>的推荐
+                </h2>
+                
+                <div class="flex space-x-3">
+                    <button id="filter-attractions" class="btn-outline-primary px-4 py-2 rounded-lg font-medium">
+                        <i class="fas fa-landmark mr-2"></i>景点
+                    </button>
+                    <button id="filter-food" class="btn-outline-primary px-4 py-2 rounded-lg font-medium">
+                        <i class="fas fa-utensils mr-2"></i>美食
+                    </button>
+                    <button id="filter-all" class="btn-primary px-4 py-2 rounded-lg font-medium text-white">
+                        <i class="fas fa-th-large mr-2"></i>全部
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 景点推荐 -->
+            <div id="attractions-section" class="mb-12">
+                <h3 class="text-2xl font-bold mb-6 text-gray-700">热门景点</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="attractions-container">
+                    <!-- 景点卡片将通过JavaScript动态生成 -->
+                </div>
+            </div>
+            
+            <!-- 美食推荐 -->
+            <div id="food-section" class="mb-12">
+                <h3 class="text-2xl font-bold mb-6 text-gray-700">特色美食</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="food-container">
+                    <!-- 美食卡片将通过JavaScript动态生成 -->
+                </div>
+            </div>
+        </section>
+        
+        <!-- 行程规划 -->
+        <section id="itinerary" class="mb-16 hidden">
+            <div class="bg-white bg-opacity-80 backdrop-blur-md rounded-xl shadow-sm p-6">
+                <h2 class="text-3xl font-bold mb-6 text-gray-800">智能行程规划</h2>
+                
+                <div class="mb-8">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-medium text-gray-700">您的行程</h3>
+                        <button id="generate-itinerary" class="btn-primary px-4 py-2 rounded-lg font-medium text-white">
+                            <i class="fas fa-sync-alt mr-2"></i>重新生成
+                        </button>
+                    </div>
+                    
+                    <div id="itinerary-container" class="space-y-6">
+                        <!-- 行程将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+                
+                <div class="flex justify-between">
+                    <button id="download-itinerary" class="btn-outline-primary px-6 py-3 rounded-lg font-medium">
+                        <i class="fas fa-download mr-2"></i>下载行程
+                    </button>
+                    <button id="share-itinerary" class="btn-primary px-6 py-3 rounded-lg font-medium text-white">
+                        <i class="fas fa-share-alt mr-2"></i>分享行程
+                    </button>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 游玩建议 -->
+        <section id="tips" class="mb-16 hidden">
+            <div class="bg-white bg-opacity-80 backdrop-blur-md rounded-xl shadow-sm p-6">
+                <h2 class="text-3xl font-bold mb-6 text-gray-800">游玩建议</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- 最佳旅行时间 -->
+                    <div>
+                        <h3 class="text-xl font-medium mb-4 text-gray-700">
+                            <i class="fas fa-calendar-alt text-blue-600 mr-2"></i>最佳旅行时间
+                        </h3>
+                        <p id="best-time" class="text-gray-600">
+                            <!-- 最佳旅行时间将通过JavaScript动态生成 -->
+                        </p>
+                    </div>
+                    
+                    <!-- 交通指南 -->
+                    <div>
+                        <h3 class="text-xl font-medium mb-4 text-gray-700">
+                            <i class="fas fa-subway text-blue-600 mr-2"></i>交通指南
+                        </h3>
+                        <p id="transportation" class="text-gray-600">
+                            <!-- 交通指南将通过JavaScript动态生成 -->
+                        </p>
+                    </div>
+                    
+                    <!-- 当地文化 -->
+                    <div>
+                        <h3 class="text-xl font-medium mb-4 text-gray-700">
+                            <i class="fas fa-users text-blue-600 mr-2"></i>当地文化
+                        </h3>
+                        <p id="local-culture" class="text-gray-600">
+                            <!-- 当地文化将通过JavaScript动态生成 -->
+                        </p>
+                    </div>
+                    
+                    <!-- 安全提示 -->
+                    <div>
+                        <h3 class="text-xl font-medium mb-4 text-gray-700">
+                            <i class="fas fa-shield-alt text-blue-600 mr-2"></i>安全提示
+                        </h3>
+                        <p id="safety-tips" class="text-gray-600">
+                            <!-- 安全提示将通过JavaScript动态生成 -->
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 关于我们 -->
+        <section id="about" class="mb-16">
+            <div class="bg-white bg-opacity-80 backdrop-blur-md rounded-xl shadow-sm p-6">
+                <h2 class="text-3xl font-bold mb-6 text-gray-800">关于我们</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-xl font-medium mb-4 text-gray-700">我们的使命</h3>
+                        <p class="text-gray-600 mb-6">
+                            我们致力于为旅行者提供最全面、最个性化的旅游推荐服务，帮助您发现目的地周边的美食和景点，让您的旅行更加精彩！
+                        </p>
+                        <p class="text-gray-600">
+                            通过智能算法和大数据分析，我们能够根据您的偏好和需求，为您推荐最适合的旅游目的地、景点和美食，让您的旅行更加便捷、舒适和难忘。
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-xl font-medium mb-4 text-gray-700">联系我们</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center space-x-3">
+                                <i class="fas fa-envelope text-blue-600 w-6 text-center"></i>
+                                <span class="text-gray-600">contact@travelrecommender.com</span>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <i class="fas fa-phone text-blue-600 w-6 text-center"></i>
+                                <span class="text-gray-600">+86 123 4567 8901</span>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <i class="fas fa-map-marker-alt text-blue-600 w-6 text-center"></i>
+                                <span class="text-gray-600">北京市朝阳区建国路88号</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 flex space-x-4">
+                            <a href="#" class="text-blue-600 hover:text-blue-800 transition-colors">
+                                <i class="fab fa-weixin text-2xl"></i>
+                            </a>
+                            <a href="#" class="text-blue-600 hover:text-blue-800 transition-colors">
+                                <i class="fab fa-weibo text-2xl"></i>
+                            </a>
+                            <a href="#" class="text-blue-600 hover:text-blue-800 transition-colors">
+                                <i class="fab fa-qq text-2xl"></i>
+                            </a>
+                            <a href="#" class="text-blue-600 hover:text-blue-800 transition-colors">
+                                <i class="fab fa-instagram text-2xl"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- 页脚 -->
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-lg font-medium mb-4">旅行推荐</h3>
+                    <p class="text-gray-400">
+                        发现周边好吃好玩的地方，让您的旅行更加精彩！
+                    </p>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-medium mb-4">快速链接</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white transition-colors">首页</a></li>
+                        <li><a href="#recommendations" class="text-gray-400 hover:text-white transition-colors">推荐</a></li>
+                        <li><a href="#itinerary" class="text-gray-400 hover:text-white transition-colors">行程规划</a></li>
+                        <li><a href="#about" class="text-gray-400 hover:text-white transition-colors">关于我们</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-medium mb-4">订阅我们</h3>
+                    <p class="text-gray-400 mb-4">
+                        订阅我们的电子邮件，获取最新的旅游资讯和优惠信息。
+                    </p>
+                    <div class="flex">
+                        <input type="email" placeholder="您的电子邮件" class="px-4 py-2 rounded-l-lg focus:outline-none flex-grow">
+                        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-r-lg transition-colors">
+                            订阅
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-700 mt-8 pt-6 flex flex-col md:flex-row justify-between items-center">
+                <p class="text-gray-400 text-sm">
+                    &copy; 2023 旅行推荐. 保留所有权利.
+                </p>
+                <div class="mt-4 md:mt-0">
+                    <a href="#" class="text-gray-400 hover:text-white text-sm mr-6 transition-colors">隐私政策</a>
+                    <a href="#" class="text-gray-400 hover:text-white text-sm mr-6 transition-colors">服务条款</a>
+                    <a href="#" class="text-gray-400 hover:text-white text-sm transition-colors">帮助中心</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- 加载动画 -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-8 rounded-lg shadow-xl flex flex-col items-center">
+            <div class="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p class="text-gray-700 font-medium">正在生成推荐...</p>
+        </div>
+    </div>
+    
+    <!-- 分享弹窗 -->
+    <div id="share-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-8 rounded-lg shadow-xl max-w-md w-full">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-800">分享您的行程</h3>
+                <button id="close-share-modal" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="mb-6">
+                <label class="block text-gray-700 mb-2">分享链接</label>
+                <div class="flex">
+                    <input type="text" id="share-link" value="https://travelrecommender.com/itinerary/abc123" 
+                        class="flex-grow px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <button id="copy-link" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-r-lg transition-colors">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="mb-6">
+                <label class="block text-gray-700 mb-2">分享到社交媒体</label>
+                <div class="flex space-x-4">
+                    <button class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white hover:bg-green-600 transition-colors">
+                        <i class="fab fa-weixin"></i>
+                    </button>
+                    <button class="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center text-white hover:bg-red-600 transition-colors">
+                        <i class="fab fa-weibo"></i>
+                    </button>
+                    <button class="w-10 h-10 rounded-full bg-blue-400 flex items-center justify-center text-white hover:bg-blue-500 transition-colors">
+                        <i class="fab fa-qq"></i>
+                    </button>
+                    <button class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white hover:bg-blue-700 transition-colors">
+                        <i class="fab fa-facebook"></i>
+                    </button>
+                    <button class="w-10 h-10 rounded-full bg-pink-600 flex items-center justify-center text-white hover:bg-pink-700 transition-colors">
+                        <i class="fab fa-instagram"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="text-center">
+                <button id="email-share" class="btn-outline-primary px-6 py-2 rounded-lg font-medium">
+                    <i class="fas fa-envelope mr-2"></i>通过邮件分享
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 地点数据 - 支持城市、区域、街道级别
+        const locationData = {
+            "北京": {
+                attractions: [
+                    {
+                        name: "故宫博物院",
+                        description: "中国明清两代的皇家宫殿，世界上现存规模最大、保存最为完整的木质结构古建筑之一。",
+                        image: "https://p3-doubao-search-sign.byteimg.com/labis/f00eac9c508787cc23f1952b0a674d1d~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672055&x-signature=hjKAwos4LZLT6w4MRN84rFbMI3w%3D",
+                        rating: 4.9,
+                        tags: ["历史古迹", "文化体验", "必去景点"],
+                        time: "建议游玩3-4小时",
+                        price: "门票60元/人"
+                    },
+                    {
+                        name: "八达岭长城",
+                        description: "明长城中保存最好的一段，也是最具代表性的一段，是明代长城的精华。",
+                        image: "https://p3-doubao-search-sign.byteimg.com/tos-cn-i-be4g95zd3a/533132452268998738~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672055&x-signature=1W7fLYx8clbAx8MFpieImx0Ii%2Fs%3D",
+                        rating: 4.8,
+                        tags: ["历史古迹", "自然风光", "必去景点"],
+                        time: "建议游玩4-5小时",
+                        price: "门票40元/人"
+                    },
+                    {
+                        name: "颐和园",
+                        description: "中国清朝时期皇家园林，前身为清漪园，坐落在北京西郊，是保存最完整的一座皇家行宫御苑。",
+                        image: "https://p3-doubao-search-sign.byteimg.com/labis/c101bc620d935691237de644fc05048f~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672055&x-signature=VP8TcOJQJwUk7dUrjmA9Z7NBTws%3D",
+                        rating: 4.7,
+                        tags: ["历史古迹", "自然风光", "文化体验"],
+                        time: "建议游玩3-4小时",
+                        price: "门票30元/人"
+                    }
+                ],
+                food: [
+                    {
+                        name: "北京烤鸭",
+                        description: "北京传统名菜，由中国汉族人研制于明朝，在当时是宫廷食品。其制作方法是用果木炭火烤制，色泽红润，肉质肥而不腻。",
+                        image: "https://p3-doubao-search-sign.byteimg.com/tos-cn-i-be4g95zd3a/777755054804172800~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672055&x-signature=liyNdyr21LSSGXlbA9NTQwPWTrY%3D",
+                        rating: 4.9,
+                        tags: ["特色菜", "必吃", "宫廷菜"],
+                        price: "人均150-300元",
+                        location: "全聚德、便宜坊等"
+                    },
+                    {
+                        name: "炸酱面",
+                        description: "北京传统面食，由菜码、炸酱拌面条而成。将黄瓜、香椿、豆芽、青豆嘴等蔬菜切成丝作为菜码备用，然后做炸酱，将肉丁及葱姜等放在油里炒，再加入黄豆制作的黄酱或甜面酱炸炒，即成炸酱。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/labis/3eaa5bdcec6a3b006537f57a5a62132d~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=Im4SArSvFLE7YR6XFd0iO%2FtsYpc%3D",
+                        rating: 4.6,
+                        tags: ["特色小吃", "必吃", "家常菜"],
+                        price: "人均20-40元",
+                        location: "海碗居、门框胡同百年卤煮等"
+                    },
+                    {
+                        name: "涮羊肉",
+                        description: "北京传统名菜，选用内蒙古的绵羊，取其鲜嫩的部位，切成薄片，用沸水涮熟后蘸调料食用。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/labis/3eaa5bdcec6a3b006537f57a5a62132d~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=Im4SArSvFLE7YR6XFd0iO%2FtsYpc%3D",
+                        rating: 4.7,
+                        tags: ["特色菜", "必吃", "冬季美食"],
+                        price: "人均100-200元",
+                        location: "东来顺、聚宝源等"
+                    }
+                ],
+                tips: {
+                    bestTime: "北京的最佳旅游季节是春季（4-5月）和秋季（9-10月）。春季气候宜人，花开满城；秋季天高气爽，枫叶红遍。夏季炎热多雨，冬季寒冷干燥，但可以体验北京的冬季特色活动。",
+                    transportation: "北京的交通十分便利，地铁是最推荐的出行方式，覆盖范围广，准点率高。公交车线路众多，但高峰期可能会拥堵。出租车和网约车也很方便，但价格较高。建议购买交通一卡通，方便乘坐地铁和公交。",
+                    localCulture: "北京是中国的政治、文化中心，有着悠久的历史和丰富的文化遗产。北京人热情好客，讲究礼仪。北京的京剧、相声、胡同文化等都是值得体验的特色文化。在参观古迹时，请注意遵守相关规定，尊重历史文化。",
+                    safetyTips: "北京是一个相对安全的城市，但仍需注意以下几点：1. 在旅游景点注意保管好个人财物；2. 避免在高峰期前往热门景点，以免拥挤；3. 注意饮食卫生，选择正规餐厅用餐；4. 在胡同中行走时，注意交通安全；5. 遇到问题可以随时向警察求助。"
+                }
+            },
+            "上海": {
+                attractions: [
+                    {
+                        name: "外滩",
+                        description: "位于上海市黄浦区的黄浦江畔，是中国历史文化街区。1844年起，外滩被划为英国租界，成为上海乃至中国的金融及贸易中心，也是旧上海资本主义的写照，一直以来被视为上海的标志性建筑和城市象征。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/labis/e367f7e6dfe114ec71ced6cdabb50c34~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=XqLPUHqt57Xq21ck0kTPGh9EvXI%3D",
+                        rating: 4.8,
+                        tags: ["城市景观", "文化体验", "必去景点"],
+                        time: "建议游玩2-3小时",
+                        price: "免费"
+                    },
+                    {
+                        name: "上海迪士尼度假区",
+                        description: "中国内地首座迪士尼主题乐园，位于上海市浦东新区川沙新镇，于2016年6月16日正式开园。它是中国第二个、中国内地第一个、亚洲第三个、世界第六个迪士尼主题公园。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/pgc-image/6af280c276564411b7807cc63fb1e288~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=H%2F4QHzVUqmW00fCl3hWRh%2BjBeCs%3D",
+                        rating: 4.7,
+                        tags: ["主题乐园", "亲子", "必去景点"],
+                        time: "建议游玩一整天",
+                        price: "门票435-599元/人"
+                    },
+                    {
+                        name: "豫园",
+                        description: "位于上海市黄浦区的老城隍庙内，是江南古典园林，始建于明代嘉靖、隆庆年间，占地三十余亩。园内有江南三大名石之称的玉玲珑、1853年小刀会起义的指挥所点春堂，园侧有城隍庙及商店街等游客景点。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/pgc-image/7d3022213b934bfa981a5cef32ffb067~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=plZ97S2MCHA3Ah4AyYzTDSFMgeM%3D",
+                        rating: 4.6,
+                        tags: ["历史古迹", "文化体验", "园林"],
+                        time: "建议游玩2-3小时",
+                        price: "门票40元/人"
+                    }
+                ],
+                food: [
+                    {
+                        name: "小笼包",
+                        description: "上海传统小吃，以皮薄、馅大、汁多、味鲜而闻名。制作时采用发酵精白面粉作皮，用猪腿精肉（或鸡肉）、虾仁等作馅，加入皮冻、盐、酱油、糖、味精等调制而成。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/pgc-image/7713e609eeea44f78eac0b8d35b2e4b3~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=I2EovveLTAV7iQ%2BETRnnYhn2Kbc%3D",
+                        rating: 4.8,
+                        tags: ["特色小吃", "必吃", "点心"],
+                        price: "人均30-60元",
+                        location: "南翔馒头店、小笼包之家等"
+                    },
+                    {
+                        name: "生煎包",
+                        description: "上海传统小吃，表皮底部金黄酥脆，上半部撒了一些芝麻、香葱。闻起来香香的，咬一口满嘴汤汁，颇受上海人喜爱。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/pgc-image/7713e609eeea44f78eac0b8d35b2e4b3~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=I2EovveLTAV7iQ%2BETRnnYhn2Kbc%3D",
+                        rating: 4.7,
+                        tags: ["特色小吃", "必吃", "点心"],
+                        price: "人均20-40元",
+                        location: "小杨生煎、大壶春等"
+                    },
+                    {
+                        name: "红烧肉",
+                        description: "上海传统名菜，选用三层肉（五花肉）制作，色泽红亮，肥而不腻，入口即化。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/pgc-image/7713e609eeea44f78eac0b8d35b2e4b3~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=I2EovveLTAV7iQ%2BETRnnYhn2Kbc%3D",
+                        rating: 4.6,
+                        tags: ["特色菜", "必吃", "家常菜"],
+                        price: "人均80-150元",
+                        location: "老吉士、兰亭餐厅等"
+                    }
+                ],
+                tips: {
+                    bestTime: "上海的最佳旅游季节是春季（3-5月）和秋季（9-11月）。春季气候宜人，花开满城；秋季天高气爽，枫叶红遍。夏季炎热多雨，冬季寒冷干燥，但可以体验上海的冬季特色活动。",
+                    transportation: "上海的交通十分便利，地铁是最推荐的出行方式，覆盖范围广，准点率高。公交车线路众多，但高峰期可能会拥堵。出租车和网约车也很方便，但价格较高。建议购买交通一卡通，方便乘坐地铁和公交。",
+                    localCulture: "上海是中国的经济、金融、贸易、航运中心，有着悠久的历史和丰富的文化遗产。上海人热情好客，讲究礼仪。上海的海派文化、弄堂文化等都是值得体验的特色文化。在参观古迹时，请注意遵守相关规定，尊重历史文化。",
+                    safetyTips: "上海是一个相对安全的城市，但仍需注意以下几点：1. 在旅游景点注意保管好个人财物；2. 避免在高峰期前往热门景点，以免拥挤；3. 注意饮食卫生，选择正规餐厅用餐；4. 在弄堂中行走时，注意交通安全；5. 遇到问题可以随时向警察求助。"
+                }
+            },
+            "成都": {
+                attractions: [
+                    {
+                        name: "成都大熊猫繁育研究基地",
+                        description: "位于四川省成都市成华区外北熊猫大道1375号，距市中心10公里，距成都双流国际机场30余公里，是世界著名的大熊猫迁地保护基地、科研繁育基地、公众教育基地和教育旅游基地。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/labis/512002860c14f96420492a8f4b27ab53~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=upqpcb9UIgoITOzn3H11T3Bl9tk%3D",
+                        rating: 4.9,
+                        tags: ["自然风光", "亲子", "必去景点"],
+                        time: "建议游玩3-4小时",
+                        price: "门票55元/人"
+                    },
+                    {
+                        name: "宽窄巷子",
+                        description: "位于四川省成都市青羊区长顺街附近，由宽巷子、窄巷子、井巷子平行排列组成，全为青黛砖瓦的仿古四合院落，这里也是成都遗留下来的较成规模的清朝古街道，与大慈寺、文殊院一起并称为成都三大历史文化名城保护街区。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/labis/acf8cd7d95a3b4aab340f02ba583cc48~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=qlt1IANefCP4q%2BmeG07MoZuT%2FRA%3D",
+                        rating: 4.7,
+                        tags: ["历史古迹", "文化体验", "必去景点"],
+                        time: "建议游玩2-3小时",
+                        price: "免费"
+                    },
+                    {
+                        name: "锦里",
+                        description: "位于四川省成都市武侯区武侯祠大街231号附1号，是成都市著名的商业步行街，占地30000余平方米，建筑面积14000余平方米，街道全长550米，以三国文化、川西民风民俗为特色。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/tos-cn-i-xv4ileqgde/3200247178a84b798a8b7c8d64445cf1~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=JMlGKtIXnks%2F1rYKVY6ooQ0gB2U%3D",
+                        rating: 4.6,
+                        tags: ["历史古迹", "文化体验", "必去景点"],
+                        time: "建议游玩2-3小时",
+                        price: "免费"
+                    }
+                ],
+                food: [
+                    {
+                        name: "火锅",
+                        description: "成都传统名菜，以麻辣鲜香著称。选用牛油、郫县豆瓣、花椒、辣椒等多种调料炒制而成的锅底，搭配各种食材食用。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/tos-cn-i-xv4ileqgde/3200247178a84b798a8b7c8d64445cf1~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=JMlGKtIXnks%2F1rYKVY6ooQ0gB2U%3D",
+                        rating: 4.9,
+                        tags: ["特色菜", "必吃", "川菜"],
+                        price: "人均80-150元",
+                        location: "蜀九香、大龙燚、小龙坎等"
+                    },
+                    {
+                        name: "串串香",
+                        description: "成都传统小吃，将各种食材串在竹签上，在滚烫的汤底中涮煮，风味独特。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/tos-cn-i-xv4ileqgde/3200247178a84b798a8b7c8d64445cf1~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=JMlGKtIXnks%2F1rYKVY6ooQ0gB2U%3D",
+                        rating: 4.8,
+                        tags: ["特色小吃", "必吃", "川菜"],
+                        price: "人均50-100元",
+                        location: "袁记串串香、钢管厂五区小郡肝串串香等"
+                    },
+                    {
+                        name: "麻婆豆腐",
+                        description: "成都传统名菜，由成都陈麻婆豆腐店创始人陈刘氏创制于清朝同治元年（1862年）。其特色在于麻、辣、烫、香、酥、嫩、鲜、活八字，称为八字箴言。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/tos-cn-i-xv4ileqgde/3200247178a84b798a8b7c8d64445cf1~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=JMlGKtIXnks%2F1rYKVY6ooQ0gB2U%3D",
+                        rating: 4.7,
+                        tags: ["特色菜", "必吃", "川菜"],
+                        price: "人均40-80元",
+                        location: "陈麻婆豆腐、龙抄手等"
+                    }
+                ],
+                tips: {
+                    bestTime: "成都的最佳旅游季节是春季（3-5月）和秋季（9-11月）。春季气候宜人，花开满城；秋季天高气爽，枫叶红遍。夏季炎热多雨，冬季寒冷干燥，但可以体验成都的冬季特色活动。",
+                    transportation: "成都的交通十分便利，地铁是最推荐的出行方式，覆盖范围广，准点率高。公交车线路众多，但高峰期可能会拥堵。出租车和网约车也很方便，但价格较高。建议购买交通一卡通，方便乘坐地铁和公交。",
+                    localCulture: "成都是四川省省会，是中国西南地区的科技、商贸、金融中心和交通枢纽，有着悠久的历史和丰富的文化遗产。成都人热情好客，讲究礼仪。成都的巴蜀文化、茶文化等都是值得体验的特色文化。在参观古迹时，请注意遵守相关规定，尊重历史文化。",
+                    safetyTips: "成都是一个相对安全的城市，但仍需注意以下几点：1. 在旅游景点注意保管好个人财物；2. 避免在高峰期前往热门景点，以免拥挤；3. 注意饮食卫生，选择正规餐厅用餐；4. 在巷弄中行走时，注意交通安全；5. 遇到问题可以随时向警察求助。"
+                }
+            },
+            "北京市东城区": {
+                attractions: [
+                    {
+                        name: "故宫博物院",
+                        description: "中国明清两代的皇家宫殿，世界上现存规模最大、保存最为完整的木质结构古建筑之一。",
+                        image: "https://p3-doubao-search-sign.byteimg.com/labis/f00eac9c508787cc23f1952b0a674d1d~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672055&x-signature=hjKAwos4LZLT6w4MRN84rFbMI3w%3D",
+                        rating: 4.9,
+                        tags: ["历史古迹", "文化体验", "必去景点"],
+                        time: "建议游玩3-4小时",
+                        price: "门票60元/人",
+                        distance: "0.5公里"
+                    },
+                    {
+                        name: "雍和宫",
+                        description: "清康熙三十三年(1694年)，康熙帝在此建造府邸、赐予四子雍亲王，称雍亲王府。雍正三年(1725年)，改王府为行宫，称雍和宫。乾隆九年(1744年)，雍和宫改为喇嘛庙，是全国规格最高的一座佛教寺院。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/labis/43d671839baea54d52ad4e0e5fbb3762~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779675535&x-signature=QPipTYeHv%2FISRmhe2HtQIEBMLGc%3D",
+                        rating: 4.7,
+                        tags: ["历史古迹", "文化体验", "宗教场所"],
+                        time: "建议游玩2-3小时",
+                        price: "门票25元/人",
+                        distance: "1.2公里"
+                    },
+                    {
+                        name: "孔庙和国子监",
+                        description: "国子监是元明清三代国家设立的最高学府和教育行政管理机构，又称'太学''国学'。始建于元代至元二十四年(公元1287年)，是唯一保存完整的古代最高学府校址。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/tos-cn-i-be4g95zd3a/804935849824354328~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779675535&x-signature=uwJqzs3g7wMSqFV7XUHE1nQOYpQ%3D",
+                        rating: 4.6,
+                        tags: ["历史古迹", "文化体验", "教育场所"],
+                        time: "建议游玩2-3小时",
+                        price: "门票30元/人",
+                        distance: "1.5公里"
+                    },
+                    {
+                        name: "南锣鼓巷",
+                        description: "北京最古老的街区之一，也位列规划中的25片旧城保护区之中。南锣鼓巷南北走向，北起鼓楼东大街,南止地安门东大街，全长786米，宽8米，与元大都(1267年)同期建成。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/labis/22495c30202132367ce6c1a5864b480e~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779675535&x-signature=TaRAJVKqvLWU8l6kIOwnu0TSKkM%3D",
+                        rating: 4.5,
+                        tags: ["历史古迹", "文化体验", "美食购物"],
+                        time: "建议游玩2-3小时",
+                        price: "免费",
+                        distance: "1.8公里"
+                    },
+                    {
+                        name: "天坛公园",
+                        description: "天坛在北京市南部，东城区永定门内大街东侧，占地约273万平方米。天坛有坛墙两重，形成内外坛，坛墙南方北圆，象征天圆地方。主要建筑在内坛，圜丘坛在南、祈谷坛在北。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/labis/f00eac9c508787cc23f1952b0a674d1d~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672055&x-signature=hjKAwos4LZLT6w4MRN84rFbMI3w%3D",
+                        rating: 4.8,
+                        tags: ["历史古迹", "自然风光", "文化体验"],
+                        time: "建议游玩3-4小时",
+                        price: "门票15元/人",
+                        distance: "2.5公里"
+                    }
+                ],
+                food: [
+                    {
+                        name: "四季民福烤鸭店(故宫店)",
+                        description: "位于故宫旁的四季民福烤鸭店的景观位置绝佳，落地窗与紫禁城隔着一条护城河，高高的城墙与筒子河水相映生辉。看故宫吃烤鸭是这里独一无二的招牌。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/tos-cn-i-be4g95zd3a/777755054804172800~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672055&x-signature=liyNdyr21LSSGXlbA9NTQwPWTrY%3D",
+                        rating: 4.9,
+                        tags: ["北京菜", "烤鸭", "景观餐厅"],
+                        price: "人均160元",
+                        location: "南池子大街11号故宫东门旁",
+                        distance: "0.8公里"
+                    },
+                    {
+                        name: "方砖厂胡同69号炸酱面",
+                        description: "在方砖厂胡同的尽头有一家炸酱面馆，每天都有络绎不绝的食客在这排队等候。别看小店不大，四周飘荡着家常味儿。由胡大妈亲自掌勺的炸酱面，是很多食客想要品尝的味道。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/labis/3eaa5bdcec6a3b006537f57a5a62132d~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=Im4SArSvFLE7YR6XFd0iO%2FtsYpc%3D",
+                        rating: 4.7,
+                        tags: ["北京菜", "炸酱面", "老字号"],
+                        price: "人均35元",
+                        location: "方砖厂胡同1号",
+                        distance: "1.0公里"
+                    },
+                    {
+                        name: "悦宾饭馆（翠花胡同店）",
+                        description: "新中国成立以来，中国第一家个体餐饮注册商户，44年的老店了，必点蒜泥肘子，清炒虾仁，属于比家常菜好吃一些的老馆子！",
+                        image: "https://p11-doubao-search-sign.byteimg.com/labis/3eaa5bdcec6a3b006537f57a5a62132d~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=Im4SArSvFLE7YR6XFd0iO%2FtsYpc%3D",
+                        rating: 4.6,
+                        tags: ["北京菜", "老字号", "家常菜"],
+                        price: "人均90元",
+                        location: "东城区翠花胡同43号",
+                        distance: "1.2公里"
+                    },
+                    {
+                        name: "河沿肉饼",
+                        description: "游客或是北京人也格外喜欢河沿肉饼的味道，就连老外也沉醉在BeiJing Pie的味道中不能自拔。肉饼是必点，厚实香醇的馅料在饼皮内呼之欲出，肉馅的汤汁一丝丝流出。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/labis/3eaa5bdcec6a3b006537f57a5a62132d~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=Im4SArSvFLE7YR6XFd0iO%2FtsYpc%3D",
+                        rating: 4.8,
+                        tags: ["北京菜", "肉饼", "老字号"],
+                        price: "人均50元",
+                        location: "东安门大街43号7幢一层101",
+                        distance: "1.5公里"
+                    },
+                    {
+                        name: "京兆尹",
+                        description: "餐厅位于北京东城重点文化保护区内，比邻雍和宫，介于成贤街国子监、孔庙等古迹与五道营胡同之间。特色菜有机彩蔬卷刺身，精选当季笋、萝卜、黄瓜、藕片等有机时蔬。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/labis/3eaa5bdcec6a3b006537f57a5a62132d~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=Im4SArSvFLE7YR6XFd0iO%2FtsYpc%3D",
+                        rating: 4.9,
+                        tags: ["素食", "创意菜", "文化体验"],
+                        price: "人均400元",
+                        location: "东城区雍和宫五道营胡同2号",
+                        distance: "1.8公里"
+                    }
+                ],
+                tips: {
+                    bestTime: "东城区的最佳旅游季节是春季（4-5月）和秋季（9-10月）。春季气候宜人，花开满城；秋季天高气爽，枫叶红遍。夏季炎热多雨，冬季寒冷干燥，但可以体验东城区的冬季特色活动。",
+                    transportation: "东城区的交通十分便利，地铁1号线、2号线、5号线、6号线等多条线路贯穿整个区域。公交车线路众多，如1路、2路、52路、120路等。出租车和网约车也很方便，但高峰期可能会拥堵。建议绿色出行，乘坐地铁或公交。",
+                    localCulture: "东城区是北京的核心区域，有着丰富的历史文化遗产。这里有故宫、天坛、雍和宫等众多名胜古迹，是北京历史文化的缩影。东城区的胡同文化也非常有名，如南锣鼓巷、烟袋斜街等，展现了老北京的生活气息。",
+                    safetyTips: "东城区是一个相对安全的区域，但仍需注意以下几点：1. 在旅游景点注意保管好个人财物；2. 避免在高峰期前往热门景点，以免拥挤；3. 注意饮食卫生，选择正规餐厅用餐；4. 在胡同中行走时，注意交通安全；5. 遇到问题可以随时向警察求助。"
+                }
+            },
+            "北京市朝阳区常营": {
+                attractions: [
+                    {
+                        name: "常营公园",
+                        description: "位于北京市朝阳区常营地区西北部绿化隔离地区的千亩银杏林中，占地约74.29万平方米。公园以秋景林为特色，是满足市民观赏、休闲、健身、运动等活动内容的郊野公园。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/labis/512002860c14f96420492a8f4b27ab53~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=upqpcb9UIgoITOzn3H11T3Bl9tk%3D",
+                        rating: 4.7,
+                        tags: ["自然风光", "休闲健身", "公园"],
+                        time: "建议游玩2-3小时",
+                        price: "免费",
+                        distance: "0.5公里"
+                    },
+                    {
+                        name: "常营马拉松体育公园",
+                        description: "常营马拉松体育公园占地面积达1078.1亩，公园建设以体现生态为主，展示了生物多样性，补充人文功能为特色，拓展城市绿化隔离带功能。公园为居民创造环境更为优美的集生活、休闲、娱乐为一体的充满了生机与活力的场所。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/labis/512002860c14f96420492a8f4b27ab53~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=upqpcb9UIgoITOzn3H11T3Bl9tk%3D",
+                        rating: 4.6,
+                        tags: ["体育健身", "自然风光", "跑步"],
+                        time: "建议游玩1-2小时",
+                        price: "免费",
+                        distance: "1.2公里"
+                    },
+                    {
+                        name: "龙湖长楹天街购物中心",
+                        description: "常营地区的大型商业综合体，集购物、餐饮、娱乐于一体，是常营地区的商业中心。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/pgc-image/6af280c276564411b7807cc63fb1e288~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=H%2F4QHzVUqmW00fCl3hWRh%2BjBeCs%3D",
+                        rating: 4.5,
+                        tags: ["购物", "餐饮", "娱乐"],
+                        time: "建议游玩3-4小时",
+                        price: "免费",
+                        distance: "1.5公里"
+                    },
+                    {
+                        name: "常营清真寺食品街",
+                        description: "常营清真寺食品街和爆火的牛街一样，都在回民居民区里，主打清真老字号的北京美食。和牛街的区别在于这里不用排队，价格亲民，服务态度亲切。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/pgc-image/7713e609eeea44f78eac0b8d35b2e4b3~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=I2EovveLTAV7iQ%2BETRnnYhn2Kbc%3D",
+                        rating: 4.8,
+                        tags: ["美食", "文化体验", "清真"],
+                        time: "建议游玩1-2小时",
+                        price: "免费",
+                        distance: "0.8公里"
+                    }
+                ],
+                food: [
+                    {
+                        name: "常赢三兄弟",
+                        description: "被无数人安利过，据说是吃过最好吃的最地道的北京涮肉店！而且常营这里的店是在北京年头早长的老店，不到饭点就人爆满，可见名气不一般了！",
+                        image: "https://p3-doubao-search-sign.byteimg.com/labis/d6a6e034ca0f1e5f1735607444d7a51a~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779675549&x-signature=n0Yp5VwRDPb2o3JEWaEoE0jZKz8%3D",
+                        rating: 4.9,
+                        tags: ["北京菜", "涮羊肉", "老字号"],
+                        price: "人均114元",
+                        location: "常营中路常营民族家园南门斜对面",
+                        distance: "0.7公里"
+                    },
+                    {
+                        name: "海满堂蟹黄大包",
+                        description: "现做现蒸的蟹黄大包，超级推荐。一个蟹黄包基本耗时12分钟，皮薄馅厚，松软香浓。蟹肉和蟹黄的馅料非常足量，又特备新鲜，一口下去浓香流油，简直吃出了幸福感的最高级别！",
+                        image: "https://p3-doubao-search-sign.byteimg.com/labis/0fbc8d4debd2dfaba4fbfb8855910e19~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779675549&x-signature=8YWJ1lLyj5KGV5rQ0IsDkGOo8%2F4%3D",
+                        rating: 4.8,
+                        tags: ["海鲜", "点心", "特色菜"],
+                        price: "人均53元",
+                        location: "长楹天街南侧商业街西区D-307观光梯7直上三层",
+                        distance: "1.6公里"
+                    },
+                    {
+                        name: "安东鸡",
+                        description: "一家在韩国很火，在北京更火的韩餐店！他家的主厨招牌菜，果真是名不虚传！炖鸡很嫩非常入味，而且辣度是可以选择的，对于不能吃辣的小吃货们非常友好了。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/tos-cn-i-xv4ileqgde/3200247178a84b798a8b7c8d64445cf1~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=JMlGKtIXnks%2F1rYKVY6ooQ0gB2U%3D",
+                        rating: 4.7,
+                        tags: ["韩国料理", "炖鸡", "炸鸡"],
+                        price: "人均70元",
+                        location: "长楹天街购物中心东区5层19",
+                        distance: "1.7公里"
+                    },
+                    {
+                        name: "蒸粤蒸·顺德古法干蒸菜",
+                        description: "今年火到出圈的顺德无水干蒸菜，终于开到北京常营了！现点现蒸无预制菜，锅盖一开满屏鲜香，这波北方人也被狠狠拿捏～",
+                        image: "https://p3-doubao-search-sign.byteimg.com/labis/0fbc8d4debd2dfaba4fbfb8855910e19~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779675549&x-signature=8YWJ1lLyj5KGV5rQ0IsDkGOo8%2F4%3D",
+                        rating: 4.8,
+                        tags: ["粤菜", "顺德菜", "蒸菜"],
+                        price: "人均45元",
+                        location: "北京朝阳区朝阳北路长楹天街东区对面（潮黄记楼上2层，近常营地铁站C口东50米）",
+                        distance: "1.5公里"
+                    },
+                    {
+                        name: "李小老烧饼",
+                        description: "小街人气王，国际友人也爱吃。不论饭点与否，这店里永远有人，杂碎汤，12块一大碗满满的料，这家店定价真的hin良心啊！味道也好，羊杂汤一点不膻，牛肉饼肉馅超多。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/tos-cn-i-xv4ileqgde/3200247178a84b798a8b7c8d64445cf1~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=JMlGKtIXnks%2F1rYKVY6ooQ0gB2U%3D",
+                        rating: 4.7,
+                        tags: ["清真", "小吃", "早餐"],
+                        price: "人均23元",
+                        location: "朝阳区常营地区民族家园1号内10-11号房",
+                        distance: "0.9公里"
+                    }
+                ],
+                tips: {
+                    bestTime: "常营地区的最佳旅游季节是春季（4-5月）和秋季（9-11月）。春季气候宜人，花开满城；秋季天高气爽，银杏金黄，是赏秋的好去处。夏季炎热多雨，冬季寒冷干燥，但可以体验常营地区的冬季特色活动。",
+                    transportation: "常营地区的交通十分便利，地铁6号线贯穿整个区域，常营站是主要站点。公交车线路众多，如306路、517路、585路、639路等。出租车和网约车也很方便，但高峰期可能会拥堵。建议绿色出行，乘坐地铁或公交。",
+                    localCulture: "常营地区是朝阳区的一个重要居住区，有着多元化的文化氛围。这里有较多的回族居民，因此清真文化在这里得到了很好的传承和发展。常营清真寺是当地的重要文化地标，周边的食品街也以清真美食为主。",
+                    safetyTips: "常营地区是一个相对安全的居住区，但仍需注意以下几点：1. 在购物中心和食品街等人流密集区域注意保管好个人财物；2. 公园内活动时注意安全，特别是在运动区域；3. 注意饮食卫生，选择正规餐厅用餐；4. 夜间出行时尽量选择明亮的道路；5. 遇到问题可以随时向警察求助。"
+                }
+            },
+            "北京市朝阳区三里屯": {
+                attractions: [
+                    {
+                        name: "三里屯太古里",
+                        description: "三里屯太古里是北京最具代表性的时尚地标之一，集购物、餐饮、娱乐于一体，是潮流时尚的聚集地。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/tos-cn-i-be4g95zd3a/1654476549850267659~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779675556&x-signature=6b79HRthmkKdrKGEkzAL6277K3I%3D",
+                        rating: 4.7,
+                        tags: ["购物", "餐饮", "娱乐", "时尚"],
+                        time: "建议游玩3-4小时",
+                        price: "免费",
+                        distance: "0.5公里"
+                    },
+                    {
+                        name: "北京工人体育场",
+                        description: "北京工人体育场是新中国成立十周年大庆时北京著名的十大建筑之一，是北京最大的综合性体育场之一。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/tos-cn-i-be4g95zd3a/902213697976664071~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779675556&x-signature=tSLLZSAPT%2BF6b465RmdkL%2FOGfnw%3D",
+                        rating: 4.5,
+                        tags: ["体育场馆", "文化体验"],
+                        time: "建议游玩1-2小时",
+                        price: "根据活动而定",
+                        distance: "1.2公里"
+                    },
+                    {
+                        name: "北京团结湖公园",
+                        description: "团结湖公园是一座以江南民居风格为主的园林式公园，园内有团结湖、中心岛、白桥等景点，是市民休闲娱乐的好去处。",
+                        image: "https://p3-doubao-search-sign.byteimg.com/tos-cn-i-be4g95zd3a/1843700250452426758~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779675556&x-signature=OdV5vKrPs7HkB6KMdrZs%2FucFhbk%3D",
+                        rating: 4.6,
+                        tags: ["自然风光", "休闲健身", "公园"],
+                        time: "建议游玩2-3小时",
+                        price: "免费",
+                        distance: "1.5公里"
+                    }
+                ],
+                food: [
+                    {
+                        name: "那家小馆(三里屯太古里店)",
+                        description: "那家小馆是一家以京菜为主的餐厅，装修风格独特，菜品精致，深受年轻人喜爱。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/tos-cn-i-xv4ileqgde/3200247178a84b798a8b7c8d64445cf1~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=JMlGKtIXnks%2F1rYKVY6ooQ0gB2U%3D",
+                        rating: 4.7,
+                        tags: ["北京菜", "创意菜", "时尚餐厅"],
+                        price: "人均120元",
+                        location: "三里屯太古里北区N8-30",
+                        distance: "0.6公里"
+                    },
+                    {
+                        name: "鼎泰丰(三里屯太古里店)",
+                        description: "鼎泰丰是一家源自台湾的小笼包专卖店，以其精致的小笼包和其他中式点心而闻名。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/tos-cn-i-xv4ileqgde/3200247178a84b798a8b7c8d64445cf1~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=JMlGKtIXnks%2F1rYKVY6ooQ0gB2U%3D",
+                        rating: 4.8,
+                        tags: ["台湾菜", "点心", "小笼包"],
+                        price: "人均150元",
+                        location: "三里屯太古里北区N8-31",
+                        distance: "0.7公里"
+                    },
+                    {
+                        name: "蓝调庄园(三里屯店)",
+                        description: "蓝调庄园是一家以西餐为主的餐厅，环境优雅，菜品精致，是情侣约会的好去处。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/tos-cn-i-xv4ileqgde/3200247178a84b798a8b7c8d64445cf1~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=JMlGKtIXnks%2F1rYKVY6ooQ0gB2U%3D",
+                        rating: 4.6,
+                        tags: ["西餐", "浪漫", "约会"],
+                        price: "人均200元",
+                        location: "三里屯太古里南区S8-30",
+                        distance: "0.8公里"
+                    }
+                ],
+                tips: {
+                    bestTime: "三里屯地区的最佳旅游季节是春季（4-5月）和秋季（9-11月）。春季气候宜人，花开满城；秋季天高气爽，是购物和户外活动的好时节。夏季炎热多雨，冬季寒冷干燥，但可以体验三里屯的冬季特色活动和节日氛围。",
+                    transportation: "三里屯地区的交通十分便利，地铁10号线和6号线贯穿整个区域，团结湖站和东四站是主要站点。公交车线路众多，如113路、115路、406路、416路等。出租车和网约车也很方便，但高峰期可能会拥堵。建议绿色出行，乘坐地铁或公交。",
+                    localCulture: "三里屯是北京最具时尚气息的地区之一，这里汇集了众多国际品牌、时尚潮流店铺和特色餐厅，是年轻人和时尚达人的聚集地。三里屯的夜生活也非常丰富多彩，有众多酒吧、咖啡馆和娱乐场所。",
+                    safetyTips: "三里屯地区是一个相对安全的商业区，但仍需注意以下几点：1. 在购物中心和人流密集区域注意保管好个人财物；2. 夜间出行时尽量选择明亮的道路；3. 注意饮食卫生，选择正规餐厅用餐；4. 在酒吧等娱乐场所消费时注意安全；5. 遇到问题可以随时向警察求助。"
+                }
+            },
+            "北京市东城区王府井": {
+                attractions: [
+                    {
+                        name: "王府井步行街",
+                        description: "王府井步行街是北京最著名的商业街之一，全长约1.5公里，汇集了众多商场、专卖店、餐厅和景点，是北京的标志性景点之一。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/pgc-image/6af280c276564411b7807cc63fb1e288~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=H%2F4QHzVUqmW00fCl3hWRh%2BjBeCs%3D",
+                        rating: 4.7,
+                        tags: ["购物", "餐饮", "娱乐", "必去景点"],
+                        time: "建议游玩3-4小时",
+                        price: "免费",
+                        distance: "0.5公里"
+                    },
+                    {
+                        name: "故宫博物院",
+                        description: "中国明清两代的皇家宫殿，世界上现存规模最大、保存最为完整的木质结构古建筑之一。",
+                        image: "https://p3-doubao-search-sign.byteimg.com/labis/f00eac9c508787cc23f1952b0a674d1d~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672055&x-signature=hjKAwos4LZLT6w4MRN84rFbMI3w%3D",
+                        rating: 4.9,
+                        tags: ["历史古迹", "文化体验", "必去景点"],
+                        time: "建议游玩3-4小时",
+                        price: "门票60元/人",
+                        distance: "1.2公里"
+                    },
+                    {
+                        name: "天安门广场",
+                        description: "天安门广场是世界上最大的城市广场之一，位于北京市中心，是中国的象征之一。",
+                        image: "https://p3-doubao-search-sign.byteimg.com/labis/f00eac9c508787cc23f1952b0a674d1d~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672055&x-signature=hjKAwos4LZLT6w4MRN84rFbMI3w%3D",
+                        rating: 4.8,
+                        tags: ["历史古迹", "文化体验", "必去景点"],
+                        time: "建议游玩1-2小时",
+                        price: "免费",
+                        distance: "1.5公里"
+                    }
+                ],
+                food: [
+                    {
+                        name: "全聚德(王府井店)",
+                        description: "全聚德是北京最著名的烤鸭店之一，创立于1864年，以其独特的烤鸭制作工艺和风味而闻名。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/tos-cn-i-xv4ileqgde/3200247178a84b798a8b7c8d64445cf1~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=JMlGKtIXnks%2F1rYKVY6ooQ0gB2U%3D",
+                        rating: 4.7,
+                        tags: ["北京菜", "烤鸭", "老字号"],
+                        price: "人均300元",
+                        location: "王府井大街30号",
+                        distance: "0.6公里"
+                    },
+                    {
+                        name: "东来顺(王府井店)",
+                        description: "东来顺是北京著名的涮羊肉店之一，创立于1903年，以其独特的涮羊肉制作工艺和风味而闻名。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/tos-cn-i-xv4ileqgde/3200247178a84b798a8b7c8d64445cf1~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=JMlGKtIXnks%2F1rYKVY6ooQ0gB2U%3D",
+                        rating: 4.6,
+                        tags: ["北京菜", "涮羊肉", "老字号"],
+                        price: "人均200元",
+                        location: "王府井大街277号",
+                        distance: "0.7公里"
+                    },
+                    {
+                        name: "王府井小吃街",
+                        description: "王府井小吃街是北京著名的小吃聚集地之一，汇集了众多北京传统小吃和特色美食。",
+                        image: "https://p11-doubao-search-sign.byteimg.com/tos-cn-i-xv4ileqgde/3200247178a84b798a8b7c8d64445cf1~tplv-be4g95zd3a-image.jpeg?rk3s=542c0f93&x-expires=1779672056&x-signature=JMlGKtIXnks%2F1rYKVY6ooQ0gB2U%3D",
+                        rating: 4.5,
+                        tags: ["小吃", "北京菜", "美食街"],
+                        price: "人均50元",
+                        location: "王府井大街北段",
+                        distance: "0.8公里"
+                    }
+                ],
+                tips: {
+                    bestTime: "王府井地区的最佳旅游季节是春季（4-5月）和秋季（9-11月）。春季气候宜人，花开满城；秋季天高气爽，是购物和户外活动的好时节。夏季炎热多雨，冬季寒冷干燥，但可以体验王府井的冬季特色活动和节日氛围。",
+                    transportation: "王府井地区的交通十分便利，地铁1号线和8号线贯穿整个区域，王府井站和东单站是主要站点。公交车线路众多，如1路、2路、52路、120路等。出租车和网约车也很方便，但高峰期可能会拥堵。建议绿色出行，乘坐地铁或公交。",
+                    localCulture: "王府井是北京最著名的商业区之一，这里汇集了众多商场、专卖店、餐厅和景点，是北京的标志性景点之一。王府井的历史可以追溯到明朝，现在已经成为了一个融合了传统文化和现代时尚的地区。",
+                    safetyTips: "王府井地区是一个相对安全的商业区，但仍需注意以下几点：1. 在购物中心和人流密集区域注意保管好个人财物；2. 夜间出行时尽量选择明亮的道路；3. 注意饮食卫生，选择正规餐厅用餐；4. 在小吃街等地方消费时注意价格和质量；5. 遇到问题可以随时向警察求助。"
+                }
+            }
+        };
+        
+        // DOM 元素
+        const locationInput = document.getElementById('location-input');
+        const searchButton = document.getElementById('search-button');
+        const popularSearchButtons = document.querySelectorAll('.popular-search');
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const preferencesSection = document.getElementById('preferences');
+        const recommendationsSection = document.getElementById('recommendations');
+        const itinerarySection = document.getElementById('itinerary');
+        const tipsSection = document.getElementById('tips');
+        const attractionsContainer = document.getElementById('attractions-container');
+        const foodContainer = document.getElementById('food-container');
+        const itineraryContainer = document.getElementById('itinerary-container');
+        const locationName = document.getElementById('location-name');
+        const bestTime = document.getElementById('best-time');
+        const transportation = document.getElementById('transportation');
+        const localCulture = document.getElementById('local-culture');
+        const safetyTips = document.getElementById('safety-tips');
+        const filterAttractions = document.getElementById('filter-attractions');
+        const filterFood = document.getElementById('filter-food');
+        const filterAll = document.getElementById('filter-all');
+        const generateItinerary = document.getElementById('generate-itinerary');
+        const downloadItinerary = document.getElementById('download-itinerary');
+        const shareItinerary = document.getElementById('share-itinerary');
+        const shareModal = document.getElementById('share-modal');
+        const closeShareModal = document.getElementById('close-share-modal');
+        const copyLink = document.getElementById('copy-link');
+        const emailShare = document.getElementById('email-share');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        
+        // 移动端菜单切换
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+        
+        // 搜索功能
+        searchButton.addEventListener('click', () => {
+            const location = locationInput.value.trim();
+            if (location) {
+                searchLocation(location);
+            }
+        });
+        
+        // 热门搜索按钮
+        popularSearchButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const location = button.textContent;
+                locationInput.value = location;
+                searchLocation(location);
+            });
+        });
+        
+        // 过滤功能
+        filterAttractions.addEventListener('click', () => {
+            document.getElementById('attractions-section').classList.remove('hidden');
+            document.getElementById('food-section').classList.add('hidden');
+            filterAttractions.classList.remove('btn-outline-primary');
+            filterAttractions.classList.add('btn-primary', 'text-white');
+            filterFood.classList.remove('btn-primary', 'text-white');
+            filterFood.classList.add('btn-outline-primary');
+            filterAll.classList.remove('btn-primary', 'text-white');
+            filterAll.classList.add('btn-outline-primary');
+        });
+        
+        filterFood.addEventListener('click', () => {
+            document.getElementById('attractions-section').classList.add('hidden');
+            document.getElementById('food-section').classList.remove('hidden');
+            filterFood.classList.remove('btn-outline-primary');
+            filterFood.classList.add('btn-primary', 'text-white');
+            filterAttractions.classList.remove('btn-primary', 'text-white');
+            filterAttractions.classList.add('btn-outline-primary');
+            filterAll.classList.remove('btn-primary', 'text-white');
+            filterAll.classList.add('btn-outline-primary');
+        });
+        
+        filterAll.addEventListener('click', () => {
+            document.getElementById('attractions-section').classList.remove('hidden');
+            document.getElementById('food-section').classList.remove('hidden');
+            filterAll.classList.remove('btn-outline-primary');
+            filterAll.classList.add('btn-primary', 'text-white');
+            filterAttractions.classList.remove('btn-primary', 'text-white');
+            filterAttractions.classList.add('btn-outline-primary');
+            filterFood.classList.remove('btn-primary', 'text-white');
+            filterFood.classList.add('btn-outline-primary');
+        });
+        
+        // 生成行程
+        generateItinerary.addEventListener('click', () => {
+            const location = locationName.textContent;
+            generateItineraryForLocation(location);
+        });
+        
+        // 下载行程
+        downloadItinerary.addEventListener('click', () => {
+            alert('行程已下载到您的设备');
+        });
+        
+        // 分享行程
+        shareItinerary.addEventListener('click', () => {
+            shareModal.classList.remove('hidden');
+        });
+        
+        // 关闭分享弹窗
+        closeShareModal.addEventListener('click', () => {
+            shareModal.classList.add('hidden');
+        });
+        
+        // 复制分享链接
+        copyLink.addEventListener('click', () => {
+            const shareLink = document.getElementById('share-link');
+            shareLink.select();
+            document.execCommand('copy');
+            alert('链接已复制到剪贴板');
+        });
+        
+        // 通过邮件分享
+        emailShare.addEventListener('click', () => {
+            const shareLink = document.getElementById('share-link').value;
+            window.location.href = `mailto:?subject=我的旅行行程&body=这是我在旅行推荐网站上生成的行程，分享给你：${shareLink}`;
+        });
+        
+        // 解析地点输入，提取城市、区域、街道信息
+        function parseLocationInput(input) {
+            // 标准化输入，去除空格，转为小写
+            const normalizedInput = input.trim().toLowerCase();
+            
+            // 定义地点层级关键词
+            const cityKeywords = ["北京", "上海", "成都"];
+            const districtKeywords = {
+                "北京": ["东城", "西城", "朝阳", "海淀", "丰台", "石景山", "通州", "昌平", "大兴", "亦庄", "顺义", "房山", "门头沟", "平谷", "怀柔", "密云", "延庆"],
+                "上海": ["黄浦", "徐汇", "长宁", "静安", "普陀", "虹口", "杨浦", "闵行", "宝山", "嘉定", "浦东", "金山", "松江", "青浦", "奉贤", "崇明"],
+                "成都": ["锦江", "青羊", "金牛", "武侯", "成华", "龙泉驿", "青白江", "新都", "温江", "双流", "郫都", "新津", "都江堰", "彭州", "邛崃", "崇州", "简阳", "金堂", "大邑", "蒲江"]
+            };
+            const streetKeywords = {
+                "北京市朝阳区": ["常营", "望京", "三里屯", "国贸", "CBD", "亚运村", "奥运村", "酒仙桥", "劲松", "双井", "建国门", "朝阳门", "东直门", "西直门", "和平里"],
+                "北京市东城区": ["王府井", "东单", "西单", "崇文门", "前门", "天安门", "景山", "南锣鼓巷", "什刹海", "鼓楼", "雍和宫", "国子监"]
+            };
+            
+            // 提取城市
+            let city = "";
+            for (const keyword of cityKeywords) {
+                if (normalizedInput.includes(keyword)) {
+                    city = keyword;
+                    break;
+                }
+            }
+            
+            // 如果没有识别出城市，尝试根据区域推断
+            if (!city) {
+                for (const [cityName, districts] of Object.entries(districtKeywords)) {
+                    for (const district of districts) {
+                        if (normalizedInput.includes(district)) {
+                            city = cityName;
+                            break;
+                        }
+                    }
+                    if (city) break;
+                }
+            }
+            
+            // 如果仍未识别出城市，返回默认城市
+            if (!city) {
+                return "北京市";
+            }
+            
+            // 提取区域
+            let district = "";
+            if (districtKeywords[city]) {
+                for (const keyword of districtKeywords[city]) {
+                    if (normalizedInput.includes(keyword)) {
+                        district = keyword;
+                        break;
+                    }
+                }
+            }
+            
+            // 提取街道
+            let street = "";
+            if (district) {
+                const cityDistrict = `${city}市${district}区`;
+                if (streetKeywords[cityDistrict]) {
+                    for (const keyword of streetKeywords[cityDistrict]) {
+                        if (normalizedInput.includes(keyword)) {
+                            street = keyword;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // 构建完整地点名称
+            let location = `${city}市`;
+            if (district) {
+                location += `${district}区`;
+                if (street) {
+                    location += street;
+                }
+            }
+            
+            // 检查是否存在该地点的数据
+            if (locationData[location]) {
+                return location;
+            } else if (district && locationData[`${city}市${district}区`]) {
+                return `${city}市${district}区`;
+            } else if (locationData[`${city}市`]) {
+                return `${city}市`;
+            }
+            
+            // 默认返回北京市
+            return "北京市";
+        }
+        
+        // 搜索地点
+        function searchLocation(inputLocation) {
+            // 显示加载动画
+            loadingOverlay.classList.remove('hidden');
+            
+            // 解析输入的地点
+            const location = parseLocationInput(inputLocation);
+            
+            // 模拟API请求延迟
+            setTimeout(() => {
+                // 隐藏加载动画
+                loadingOverlay.classList.add('hidden');
+                
+                if (locationData[location]) {
+                    // 更新页面内容
+                    locationName.textContent = location;
+                    displayRecommendations(location);
+                    generateItineraryForLocation(location);
+                    displayTips(location);
+                    
+                    // 显示相关部分
+                    recommendationsSection.classList.remove('hidden');
+                    itinerarySection.classList.remove('hidden');
+                    tipsSection.classList.remove('hidden');
+                    
+                    // 滚动到推荐部分
+                    recommendationsSection.scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    // 尝试提取城市名称
+                    const cityMatch = inputLocation.match(/([^省市区县]+[省市])/);
+                    const city = cityMatch ? cityMatch[1] : inputLocation;
+                    
+                    if (locationData[city]) {
+                        // 更新页面内容
+                        locationName.textContent = city;
+                        displayRecommendations(city);
+                        generateItineraryForLocation(city);
+                        displayTips(city);
+                        
+                        // 显示相关部分
+                        recommendationsSection.classList.remove('hidden');
+                        itinerarySection.classList.remove('hidden');
+                        tipsSection.classList.remove('hidden');
+                        
+                        // 显示提示信息
+                        alert(`抱歉，暂时没有"${inputLocation}"的详细推荐信息，已为您显示"${city}"的推荐。`);
+                        
+                        // 滚动到推荐部分
+                        recommendationsSection.scrollIntoView({ behavior: 'smooth' });
+                    } else {
+                        alert('抱歉，暂时没有该地点的推荐信息。请尝试其他地点。');
+                    }
+                }
+            }, 1500);
+        }
+        
+        // 显示推荐
+        function displayRecommendations(location) {
+            const locationInfo = locationData[location];
+            
+            // 清空容器
+            attractionsContainer.innerHTML = '';
+            foodContainer.innerHTML = '';
+            
+            // 添加景点
+            locationInfo.attractions.forEach((attraction, index) => {
+                const card = createAttractionCard(attraction, index);
+                attractionsContainer.appendChild(card);
+            });
+            
+            // 添加美食
+            locationInfo.food.forEach((food, index) => {
+                const card = createFoodCard(food, index);
+                foodContainer.appendChild(card);
+            });
+        }
+        
+        // 创建景点卡片
+        function createAttractionCard(attraction, index) {
+            const card = document.createElement('div');
+            card.className = `card bg-white animate-fade-in animate-delay-${index * 100}`;
+            
+            card.innerHTML = `
+                <img src="${attraction.image}" class="card-img-top" alt="${attraction.name}">
+                <div class="p-6">
+                    <div class="flex justify-between items-start mb-3">
+                        <h4 class="text-xl font-bold text-gray-800">${attraction.name}</h4>
+                        <div class="flex items-center">
+                            <i class="fas fa-star text-yellow-400 mr-1"></i>
+                            <span class="text-gray-700 font-medium">${attraction.rating}</span>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 mb-4">${attraction.description}</p>
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        ${attraction.tags.map(tag => `
+                            <span class="badge px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">${tag}</span>
+                        `).join('')}
+                    </div>
+                    <div class="flex justify-between text-sm text-gray-500">
+                        <div class="flex items-center">
+                            <i class="far fa-clock mr-1"></i>
+                            <span>${attraction.time}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-ticket-alt mr-1"></i>
+                            <span>${attraction.price}</span>
+                        </div>
+                        ${attraction.distance ? `
+                        <div class="flex items-center">
+                            <i class="fas fa-map-marker-alt mr-1"></i>
+                            <span>${attraction.distance}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        // 创建美食卡片
+        function createFoodCard(food, index) {
+            const card = document.createElement('div');
+            card.className = `card bg-white animate-fade-in animate-delay-${index * 100}`;
+            
+            card.innerHTML = `
+                <img src="${food.image}" class="card-img-top" alt="${food.name}">
+                <div class="p-6">
+                    <div class="flex justify-between items-start mb-3">
+                        <h4 class="text-xl font-bold text-gray-800">${food.name}</h4>
+                        <div class="flex items-center">
+                            <i class="fas fa-star text-yellow-400 mr-1"></i>
+                            <span class="text-gray-700 font-medium">${food.rating}</span>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 mb-4">${food.description}</p>
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        ${food.tags.map(tag => `
+                            <span class="badge px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">${tag}</span>
+                        `).join('')}
+                    </div>
+                    <div class="flex flex-wrap justify-between text-sm text-gray-500 gap-2">
+                        <div class="flex items-center">
+                            <i class="fas fa-money-bill-wave mr-1"></i>
+                            <span>${food.price}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-map-marker-alt mr-1"></i>
+                            <span>${food.location}</span>
+                        </div>
+                        ${food.distance ? `
+                        <div class="flex items-center">
+                            <i class="fas fa-walking mr-1"></i>
+                            <span>${food.distance}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        // 生成行程
+        function generateItineraryForLocation(location) {
+            const locationInfo = locationData[location];
+            if (!locationInfo) return;
+            
+            // 清空容器
+            itineraryContainer.innerHTML = '';
+            
+            // 随机选择景点和美食
+            const selectedAttractions = getRandomItems(locationInfo.attractions, 3);
+            const selectedFood = getRandomItems(locationInfo.food, 3);
+            
+            // 创建行程
+            const days = 3;
+            for (let i = 1; i <= days; i++) {
+                const dayItinerary = document.createElement('div');
+                dayItinerary.className = 'bg-gray-50 rounded-lg p-6';
+                
+                dayItinerary.innerHTML = `
+                    <h4 class="text-xl font-bold text-gray-800 mb-4">第${i}天</h4>
+                    <div class="space-y-4">
+                        <div class="flex items-start">
+                            <div class="bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-4 flex-shrink-0">
+                                <i class="fas fa-sun"></i>
+                            </div>
+                            <div>
+                                <h5 class="font-medium text-gray-800">上午</h5>
+                                <p class="text-gray-600">参观 ${selectedAttractions[(i-1) % selectedAttractions.length].name}</p>
+                                <p class="text-sm text-gray-500 mt-1">${selectedAttractions[(i-1) % selectedAttractions.length].time}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="bg-yellow-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-4 flex-shrink-0">
+                                <i class="fas fa-utensils"></i>
+                            </div>
+                            <div>
+                                <h5 class="font-medium text-gray-800">中午</h5>
+                                <p class="text-gray-600">品尝 ${selectedFood[(i-1) % selectedFood.length].name}</p>
+                                <p class="text-sm text-gray-500 mt-1">${selectedFood[(i-1) % selectedFood.length].location}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                            <div class="bg-purple-500 text-white rounded-full w-8 h-8 flex items-center justify-center mr-4 flex-shrink-0">
+                                <i class="fas fa-moon"></i>
+                            </div>
+                            <div>
+                                <h5 class="font-medium text-gray-800">晚上</h5>
+                                <p class="text-gray-600">自由活动，体验当地夜景</p>
+                                <p class="text-sm text-gray-500 mt-1">建议前往市中心或河畔散步</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                itineraryContainer.appendChild(dayItinerary);
+            }
+        }
+        
+        // 显示游玩建议
+        function displayTips(location) {
+            const locationInfo = locationData[location];
+            if (!locationInfo) return;
+            
+            bestTime.textContent = locationInfo.tips.bestTime;
+            transportation.textContent = locationInfo.tips.transportation;
+            localCulture.textContent = locationInfo.tips.localCulture;
+            safetyTips.textContent = locationInfo.tips.safetyTips;
+        }
+        
+        // 获取随机项目
+        function getRandomItems(array, count) {
+            const shuffled = [...array].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, count);
+        }
+        
+        // 初始化Three.js背景
+        function initThreeBackground() {
+            const canvas = document.getElementById('bg-canvas');
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            
+            const renderer = new THREE.WebGLRenderer({
+                canvas: canvas,
+                alpha: true,
+                antialias: true
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            
+            // 创建粒子
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particlesCount = 1500;
+            
+            const posArray = new Float32Array(particlesCount * 3);
+            
+            for (let i = 0; i < particlesCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 10;
+            }
+            
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            
+            const particlesMaterial = new THREE.PointsMaterial({
+                size: 0.005,
+                color: 0x4361ee,
+                transparent: true,
+                opacity: 0.8
+            });
+            
+            const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(particlesMesh);
+            
+            camera.position.z = 5;
+            
+            // 动画
+            function animate() {
+                requestAnimationFrame(animate);
+                
+                particlesMesh.rotation.y += 0.0005;
+                
+                renderer.render(scene, camera);
+            }
+            
+            animate();
+            
+            // 响应式调整
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+        
+        // 获取所有地点名称
+        function getAllLocationNames() {
+            return Object.keys(locationData);
+        }
+        
+        // 过滤匹配的地点
+        function filterLocations(input) {
+            const normalizedInput = input.trim().toLowerCase();
+            const allLocations = getAllLocationNames();
+            
+            return allLocations.filter(location => {
+                return location.toLowerCase().includes(normalizedInput);
+            });
+        }
+        
+        // 显示搜索建议
+        function showSearchSuggestions() {
+            const input = locationInput.value.trim();
+            const suggestionsContainer = document.getElementById('search-suggestions');
+            const suggestionsList = suggestionsContainer.querySelector('ul');
+            
+            // 清空之前的建议
+            suggestionsList.innerHTML = '';
+            
+            if (input.length < 1) {
+                suggestionsContainer.classList.add('hidden');
+                return;
+            }
+            
+            // 获取匹配的地点
+            const matchedLocations = filterLocations(input);
+            
+            if (matchedLocations.length === 0) {
+                suggestionsContainer.classList.add('hidden');
+                return;
+            }
+            
+            // 添加建议项
+            matchedLocations.forEach(location => {
+                const li = document.createElement('li');
+                li.className = 'px-4 py-2 hover:bg-blue-100 cursor-pointer';
+                li.textContent = location;
+                
+                // 点击建议项时填充输入框并执行搜索
+                li.addEventListener('click', () => {
+                    locationInput.value = location;
+                    suggestionsContainer.classList.add('hidden');
+                    searchLocation(location);
+                });
+                
+                suggestionsList.appendChild(li);
+            });
+            
+            // 显示建议
+            suggestionsContainer.classList.remove('hidden');
+        }
+        
+        // 初始化页面
+        function init() {
+            initThreeBackground();
+            
+            // 默认显示北京东城区的推荐
+            searchLocation('北京市东城区');
+            
+            // 添加搜索框事件
+            locationInput.addEventListener('input', showSearchSuggestions);
+            locationInput.addEventListener('focus', showSearchSuggestions);
+            
+            // 点击页面其他地方隐藏搜索建议
+            document.addEventListener('click', (e) => {
+                const suggestionsContainer = document.getElementById('search-suggestions');
+                const inputContainer = document.querySelector('.relative');
+                
+                if (!inputContainer.contains(e.target)) {
+                    suggestionsContainer.classList.add('hidden');
+                }
+            });
+            
+            // 添加搜索框回车键事件
+            locationInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const location = locationInput.value.trim();
+                    if (location) {
+                        searchLocation(location);
+                        document.getElementById('search-suggestions').classList.add('hidden');
+                    }
+                }
+            });
+        }
+        
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

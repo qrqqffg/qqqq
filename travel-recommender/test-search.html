@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>搜索功能测试 - 旅行推荐网站</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+        
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+        
+        .test-case {
+            transition: all 0.3s ease;
+        }
+        
+        .test-case:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .test-result {
+            transition: all 0.3s ease;
+        }
+        
+        .success {
+            background-color: rgba(72, 187, 120, 0.1);
+            border-color: rgba(72, 187, 120, 0.5);
+        }
+        
+        .error {
+            background-color: rgba(245, 101, 101, 0.1);
+            border-color: rgba(245, 101, 101, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">旅行推荐网站 - 搜索功能测试</h1>
+            <p class="text-gray-600">测试不同地点输入的搜索结果</p>
+        </header>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- 测试用例 -->
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">测试用例</h2>
+                
+                <div class="space-y-6">
+                    <!-- 测试用例1 -->
+                    <div class="test-case bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <h3 class="font-medium text-gray-800 mb-2">测试用例 1: 城市级别搜索</h3>
+                        <p class="text-gray-600 mb-4">输入完整城市名称，如"北京"、"上海"、"成都"</p>
+                        <div class="flex space-x-3">
+                            <button class="test-btn px-4 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors" data-test="北京">北京</button>
+                            <button class="test-btn px-4 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors" data-test="上海">上海</button>
+                            <button class="test-btn px-4 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors" data-test="成都">成都</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 测试用例2 -->
+                    <div class="test-case bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <h3 class="font-medium text-gray-800 mb-2">测试用例 2: 区域级别搜索</h3>
+                        <p class="text-gray-600 mb-4">输入城市+区域名称，如"北京市东城区"、"北京市朝阳区"</p>
+                        <div class="flex space-x-3">
+                            <button class="test-btn px-4 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors" data-test="北京市东城区">北京市东城区</button>
+                            <button class="test-btn px-4 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors" data-test="北京市朝阳区">北京市朝阳区</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 测试用例3 -->
+                    <div class="test-case bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <h3 class="font-medium text-gray-800 mb-2">测试用例 3: 街道级别搜索</h3>
+                        <p class="text-gray-600 mb-4">输入城市+区域+街道名称，如"北京市朝阳区常营"、"北京市东城区王府井"</p>
+                        <div class="flex space-x-3">
+                            <button class="test-btn px-4 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors" data-test="北京市朝阳区常营">北京市朝阳区常营</button>
+                            <button class="test-btn px-4 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors" data-test="北京市东城区王府井">北京市东城区王府井</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 测试用例4 -->
+                    <div class="test-case bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <h3 class="font-medium text-gray-800 mb-2">测试用例 4: 模糊搜索</h3>
+                        <p class="text-gray-600 mb-4">输入部分地点名称，如"朝阳"、"东城"、"常营"</p>
+                        <div class="flex space-x-3">
+                            <button class="test-btn px-4 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors" data-test="朝阳">朝阳</button>
+                            <button class="test-btn px-4 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors" data-test="东城">东城</button>
+                            <button class="test-btn px-4 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors" data-test="常营">常营</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 测试用例5 -->
+                    <div class="test-case bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <h3 class="font-medium text-gray-800 mb-2">测试用例 5: 未匹配地点</h3>
+                        <p class="text-gray-600 mb-4">输入未收录的地点名称，如"北京市海淀区"、"广州市天河区"</p>
+                        <div class="flex space-x-3">
+                            <button class="test-btn px-4 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors" data-test="北京市海淀区">北京市海淀区</button>
+                            <button class="test-btn px-4 py-2 bg-blue-100 text-blue-800 rounded-lg hover:bg-blue-200 transition-colors" data-test="广州市天河区">广州市天河区</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 测试结果 -->
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">测试结果</h2>
+                
+                <div id="test-results" class="space-y-6">
+                    <div class="test-result bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <p class="text-gray-600 text-center">点击左侧测试用例按钮查看结果</p>
+                    </div>
+                </div>
+                
+                <div class="mt-8">
+                    <h3 class="font-medium text-gray-800 mb-4">手动测试</h3>
+                    <div class="flex space-x-3">
+                        <input type="text" id="manual-test-input" placeholder="输入地点名称" class="flex-grow px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <button id="manual-test-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">测试</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-12 text-center">
+            <a href="index.html" class="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-arrow-left mr-2"></i>返回首页
+            </a>
+        </div>
+    </div>
+    
+    <script>
+        // 地点数据结构
+        const locationData = {
+            "北京": { name: "北京", level: "城市" },
+            "上海": { name: "上海", level: "城市" },
+            "成都": { name: "成都", level: "城市" },
+            "北京市东城区": { name: "北京市东城区", level: "区域" },
+            "北京市朝阳区": { name: "北京市朝阳区", level: "区域" },
+            "北京市朝阳区常营": { name: "北京市朝阳区常营", level: "街道" },
+            "北京市朝阳区三里屯": { name: "北京市朝阳区三里屯", level: "街道" },
+            "北京市东城区王府井": { name: "北京市东城区王府井", level: "街道" }
+        };
+        
+        // 解析地点输入，提取城市、区域、街道信息
+        function parseLocationInput(input) {
+            // 标准化输入，去除空格，转为小写
+            const normalizedInput = input.trim().toLowerCase();
+            
+            // 定义地点层级关键词
+            const cityKeywords = ["北京", "上海", "成都"];
+            const districtKeywords = {
+                "北京": ["东城", "西城", "朝阳", "海淀", "丰台", "石景山", "通州", "昌平", "大兴", "亦庄", "顺义", "房山", "门头沟", "平谷", "怀柔", "密云", "延庆"],
+                "上海": ["黄浦", "徐汇", "长宁", "静安", "普陀", "虹口", "杨浦", "闵行", "宝山", "嘉定", "浦东", "金山", "松江", "青浦", "奉贤", "崇明"],
+                "成都": ["锦江", "青羊", "金牛", "武侯", "成华", "龙泉驿", "青白江", "新都", "温江", "双流", "郫都", "新津", "都江堰", "彭州", "邛崃", "崇州", "简阳", "金堂", "大邑", "蒲江"]
+            };
+            const streetKeywords = {
+                "北京市朝阳区": ["常营", "望京", "三里屯", "国贸", "CBD", "亚运村", "奥运村", "酒仙桥", "劲松", "双井", "建国门", "朝阳门", "东直门", "西直门", "和平里"],
+                "北京市东城区": ["王府井", "东单", "西单", "崇文门", "前门", "天安门", "景山", "南锣鼓巷", "什刹海", "鼓楼", "雍和宫", "国子监"]
+            };
+            
+            // 提取城市
+            let city = "";
+            for (const keyword of cityKeywords) {
+                if (normalizedInput.includes(keyword)) {
+                    city = keyword;
+                    break;
+                }
+            }
+            
+            // 如果没有识别出城市，尝试根据区域推断
+            if (!city) {
+                for (const [cityName, districts] of Object.entries(districtKeywords)) {
+                    for (const district of districts) {
+                        if (normalizedInput.includes(district)) {
+                            city = cityName;
+                            break;
+                        }
+                    }
+                    if (city) break;
+                }
+            }
+            
+            // 如果仍未识别出城市，返回默认城市
+            if (!city) {
+                return {
+                    input: input,
+                    parsed: "北京市",
+                    level: "城市",
+                    matched: true,
+                    message: `未识别城市，默认返回"北京市"`
+                };
+            }
+            
+            // 提取区域
+            let district = "";
+            if (districtKeywords[city]) {
+                for (const keyword of districtKeywords[city]) {
+                    if (normalizedInput.includes(keyword)) {
+                        district = keyword;
+                        break;
+                    }
+                }
+            }
+            
+            // 提取街道
+            let street = "";
+            if (district) {
+                const cityDistrict = `${city}市${district}区`;
+                if (streetKeywords[cityDistrict]) {
+                    for (const keyword of streetKeywords[cityDistrict]) {
+                        if (normalizedInput.includes(keyword)) {
+                            street = keyword;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // 构建完整地点名称
+            let location = `${city}市`;
+            if (district) {
+                location += `${district}区`;
+                if (street) {
+                    location += street;
+                }
+            }
+            
+            // 检查是否存在该地点的数据
+            if (locationData[location]) {
+                return {
+                    input: input,
+                    parsed: location,
+                    level: locationData[location].level,
+                    matched: true,
+                    message: `成功匹配${locationData[location].level}级别地点`
+                };
+            } else if (district && locationData[`${city}市${district}区`]) {
+                return {
+                    input: input,
+                    parsed: `${city}市${district}区`,
+                    level: "区域",
+                    matched: true,
+                    message: `成功匹配区域级别地点，未找到街道级别数据`
+                };
+            } else if (locationData[`${city}市`]) {
+                return {
+                    input: input,
+                    parsed: `${city}市`,
+                    level: "城市",
+                    matched: true,
+                    message: `成功匹配城市级别地点，未找到区域或街道级别数据`
+                };
+            }
+            
+            // 默认返回北京市
+            return {
+                input: input,
+                parsed: `${city}市`,
+                level: "城市",
+                matched: false,
+                message: `未找到"${input}"的详细数据，返回${city}市的推荐`
+            };
+        }
+        
+        // 显示测试结果
+        function showTestResult(input) {
+            const result = parseLocationInput(input);
+            const resultsContainer = document.getElementById('test-results');
+            
+            let resultClass = result.matched ? 'success' : 'error';
+            let iconClass = result.matched ? 'fas fa-check-circle text-green-500' : 'fas fa-exclamation-circle text-red-500';
+            
+            resultsContainer.innerHTML = `
+                <div class="test-result ${resultClass} rounded-lg p-4 border border-gray-200">
+                    <div class="flex items-start">
+                        <div class="mr-4 mt-1">
+                            <i class="${iconClass} text-xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-gray-800 mb-2">输入: "${result.input}"</h4>
+                            <p class="text-gray-600 mb-2">解析结果: <span class="font-medium">${result.parsed}</span></p>
+                            <p class="text-gray-600 mb-2">地点级别: <span class="font-medium">${result.level}</span></p>
+                            <p class="text-gray-600">${result.message}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 绑定测试按钮事件
+        document.querySelectorAll('.test-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                const testInput = button.getAttribute('data-test');
+                showTestResult(testInput);
+            });
+        });
+        
+        // 绑定手动测试按钮事件
+        document.getElementById('manual-test-btn').addEventListener('click', () => {
+            const manualInput = document.getElementById('manual-test-input').value.trim();
+            if (manualInput) {
+                showTestResult(manualInput);
+            }
+        });
+        
+        // 绑定手动测试输入框回车键事件
+        document.getElementById('manual-test-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const manualInput = this.value.trim();
+                if (manualInput) {
+                    showTestResult(manualInput);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
